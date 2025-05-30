@@ -21,13 +21,15 @@
               <button class="btn btn-primary" @click="addName">Add Name</button>
             </div>
             <div>
-              <h5>Current Names:</h5>
-              <ul class="list-group">
-                <li v-for="(name, index) in names" :key="index" class="list-group-item d-flex justify-content-between align-items-center">
-                  {{ name }}
-                  <button class="btn btn-danger btn-sm" @click="removeName(index)">Remove</button>
-                </li>
-              </ul>
+              <h5>Current Names (Drag to reorder):</h5>
+              <draggable v-model="names" tag="ul" class="list-group" item-key="element" @end="updateNamesOrder">
+                <template #item="{ element }">
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span class="drag-handle" style="cursor: move">{{ element }}</span>
+                    <button class="btn btn-danger btn-sm" @click="removeName(names.indexOf(element))">Remove</button>
+                  </li>
+                </template>
+              </draggable>
             </div>
           </div>
           <div class="modal-footer">
@@ -45,7 +47,8 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import rrulePlugin from "@fullcalendar/rrule";
 import * as bootstrap from "bootstrap";
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, orderBy, query, serverTimestamp } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, orderBy, query, serverTimestamp, writeBatch } from "firebase/firestore";
+import draggable from "vuedraggable";
 
 // Firebase configuration using environment variables
 const firebaseConfig = {
@@ -62,7 +65,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 export default {
-  components: { FullCalendar },
+  components: { FullCalendar, draggable },
   data() {
     return {
       //  names: [
@@ -134,6 +137,24 @@ export default {
         console.error("Error removing name:", error);
       }
     },
+    async updateNamesOrder() {
+      try {
+        const q = query(collection(db, "names"), orderBy("createdAt", "asc"));
+        const querySnapshot = await getDocs(q);
+        const docs = querySnapshot.docs;
+        const batch = writeBatch(db);
+        this.names.forEach((name, index) => {
+          const docRef = doc(db, "names", docs.find((d) => d.data().name === name).id);
+          batch.update(docRef, {
+            createdAt: new Date(Date.now() + index * 1000), // Sequential timestamps with offset
+          });
+        });
+        await batch.commit();
+        this.calendarOptions.events = this.generateEvents();
+      } catch (error) {
+        console.error("Error updating names order:", error);
+      }
+    },
     generateEvents() {
       const events = [];
       const startDate = new Date("2025-05-30");
@@ -202,5 +223,13 @@ export default {
 }
 :deep(.fc-daygrid-day) {
   min-height: 10px;
+}
+.drag-handle {
+  display: flex;
+  align-items: center;
+}
+.drag-handle::before {
+  content: "☰";
+  margin-right: 8px;
 }
 </style>
