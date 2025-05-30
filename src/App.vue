@@ -44,42 +44,94 @@ import FullCalendar from "@fullcalendar/vue3";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import rrulePlugin from "@fullcalendar/rrule";
 import * as bootstrap from "bootstrap";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore";
+
+// Firebase configuration using environment variables
+const firebaseConfig = {
+  apiKey: process.env.VUE_APP_FIREBASE_API_KEY,
+  authDomain: "calendar-scheduler-5e1c7.firebaseapp.com",
+  projectId: "calendar-scheduler-5e1c7",
+  storageBucket: "calendar-scheduler-5e1c7.firebasestorage.app",
+  messagingSenderId: process.env.VUE_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.VUE_APP_FIREBASE_APP_ID,
+  measurementId: process.env.VUE_APP_FIREBASE_MEASUREMENT_ID,
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 export default {
   components: { FullCalendar },
   data() {
     return {
-      names: [
-        "Lester Niel", // Friday, May 30, 2025
-        "Rio", // Monday, June 2, 2025
-        "Shernan",
-        "Fae Arabella",
-        "Dominic Ivan",
-        "Crissan",
-        "Christian",
-        "Karl Louise",
-      ],
+      //  names: [
+      //   "Lester Niel", // Friday, May 30, 2025
+      //   "Rio", // Monday, June 2, 2025
+      //   "Shernan",
+      //   "Fae Arabella",
+      //   "Dominic Ivan",
+      //   "Crissan",
+      //   "Christian",
+      //   "Karl Louise",
+      // ],
+      names: [],
       newName: "",
       calendarOptions: {
         plugins: [dayGridPlugin, rrulePlugin],
-        initialView: "dayGridMonth", // Monthly view
-        initialDate: "2025-05-30", // Start on May 30, 2025 (today)
+        initialView: "dayGridMonth",
+        initialDate: "2025-05-30",
         headerToolbar: {
           left: "prev,next today",
           center: "title",
-          right: "dayGridMonth,dayGridWeek", // Allow switching between month and week views
+          right: "dayGridMonth,dayGridWeek",
         },
-        events: [], // Initialize empty, populate in created
+        events: [],
         eventDisplay: "block",
         eventTextColor: "#fff",
         eventBackgroundColor: "#007bff",
       },
     };
   },
-  created() {
+
+  async created() {
+    await this.fetchNames();
     this.calendarOptions.events = this.generateEvents();
   },
+
   methods: {
+    async fetchNames() {
+      try {
+        const querySnapshot = await getDocs(collection(db, "names"));
+        this.names = querySnapshot.docs.map((doc) => doc.data().name);
+      } catch (error) {
+        console.error("Error fetching names:", error);
+      }
+    },
+    async addName() {
+      if (this.newName && !this.names.includes(this.newName)) {
+        try {
+          await addDoc(collection(db, "names"), { name: this.newName });
+          this.names.push(this.newName);
+          this.calendarOptions.events = this.generateEvents();
+          this.newName = "";
+        } catch (error) {
+          console.error("Error adding name:", error);
+        }
+      }
+    },
+    async removeName(index) {
+      try {
+        const querySnapshot = await getDocs(collection(db, "names"));
+        const docId = querySnapshot.docs.find((doc) => doc.data().name === this.names[index]).id;
+        await deleteDoc(doc(db, "names", docId));
+        this.names.splice(index, 1);
+        this.calendarOptions.events = this.generateEvents();
+      } catch (error) {
+        console.error("Error removing name:", error);
+      }
+    },
     generateEvents() {
       const events = [];
       const startDate = new Date("2025-05-30");
@@ -89,7 +141,7 @@ export default {
 
       for (let i = 0; i < totalSlots; i++) {
         const nameIndex = i % this.names.length;
-        const name = this.names[nameIndex];
+        const name = this.names[nameIndex] || "Unassigned";
         const dayIndex = i % 5;
         const weekOffset = Math.floor(i / 5);
         const eventDate = new Date(startDate);
@@ -114,19 +166,6 @@ export default {
 
       return events;
     },
-
-    addName() {
-      if (this.newName && !this.names.includes(this.newName)) {
-        this.names.push(this.newName);
-        this.calendarOptions.events = this.generateEvents();
-        this.newName = "";
-      }
-    },
-    removeName(index) {
-      this.names.splice(index, 1);
-      this.calendarOptions.events = this.generateEvents();
-    },
-
     exportSchedule() {
       const events = this.generateEvents();
       const csv = events.map((event) => ({
@@ -141,7 +180,6 @@ export default {
       link.download = "schedule.csv";
       link.click();
     },
-
     openManageNamesModal() {
       const modalElement = document.getElementById("manageNamesModal");
       const modal = new bootstrap.Modal(modalElement);
