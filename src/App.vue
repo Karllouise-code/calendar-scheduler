@@ -1,25 +1,41 @@
 <template>
   <div class="container mt-4">
-    <h2>Weekly Schedule</h2>
-    <div class="mb-3">
-      <div class="input-group w-auto">
-        <input v-model="newName" placeholder="Add new name" class="form-control" />
-        <button class="btn btn-primary" @click="addName">Add Name</button>
-      </div>
-      <div class="mt-2">
-        <h5>Current Names:</h5>
-        <ul class="list-group">
-          <li v-for="(name, index) in names" :key="index" class="list-group-item d-flex justify-content-between align-items-center">
-            {{ name }}
-            <button class="btn btn-danger btn-sm" @click="removeName(index)">Remove</button>
-          </li>
-        </ul>
-      </div>
-    </div>
-    <div class="mt-4 text-end">
-      <button class="btn btn-primary mb-3" @click="exportSchedule">Export Schedule</button>
+    <h2 class="mb-3">Weekly Schedule</h2>
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+      <button class="btn btn-primary" @click="openManageNamesModal">Manage Names</button>
+      <button class="btn btn-primary" @click="exportSchedule">Export Schedule</button>
     </div>
     <FullCalendar :options="calendarOptions" />
+
+    <!-- Modal for Managing Names -->
+    <div class="modal fade" id="manageNamesModal" tabindex="-1" aria-labelledby="manageNamesModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="manageNamesModalLabel">Manage Names</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="input-group mb-3">
+              <input v-model="newName" placeholder="Add new name" class="form-control" />
+              <button class="btn btn-primary" @click="addName">Add Name</button>
+            </div>
+            <div>
+              <h5>Current Names:</h5>
+              <ul class="list-group">
+                <li v-for="(name, index) in names" :key="index" class="list-group-item d-flex justify-content-between align-items-center">
+                  {{ name }}
+                  <button class="btn btn-danger btn-sm" @click="removeName(index)">Remove</button>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -27,6 +43,7 @@
 import FullCalendar from "@fullcalendar/vue3";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import rrulePlugin from "@fullcalendar/rrule";
+import * as bootstrap from "bootstrap";
 
 export default {
   components: { FullCalendar },
@@ -124,6 +141,12 @@ export default {
       link.download = "schedule.csv";
       link.click();
     },
+
+    openManageNamesModal() {
+      const modalElement = document.getElementById("manageNamesModal");
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
+    },
   },
 };
 </script>
@@ -138,6 +161,6 @@ export default {
   padding: 2px 4px;
 }
 :deep(.fc-daygrid-day) {
-  min-height: 100px;
+  min-height: 10px;
 }
 </style>
