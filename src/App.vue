@@ -45,7 +45,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import rrulePlugin from "@fullcalendar/rrule";
 import * as bootstrap from "bootstrap";
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, orderBy, query, serverTimestamp } from "firebase/firestore";
 
 // Firebase configuration using environment variables
 const firebaseConfig = {
@@ -55,7 +55,6 @@ const firebaseConfig = {
   storageBucket: "calendar-scheduler-5e1c7.firebasestorage.app",
   messagingSenderId: process.env.VUE_APP_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.VUE_APP_FIREBASE_APP_ID,
-  measurementId: process.env.VUE_APP_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
@@ -94,16 +93,15 @@ export default {
       },
     };
   },
-
   async created() {
     await this.fetchNames();
     this.calendarOptions.events = this.generateEvents();
   },
-
   methods: {
     async fetchNames() {
       try {
-        const querySnapshot = await getDocs(collection(db, "names"));
+        const q = query(collection(db, "names"), orderBy("createdAt", "asc"));
+        const querySnapshot = await getDocs(q);
         this.names = querySnapshot.docs.map((doc) => doc.data().name);
       } catch (error) {
         console.error("Error fetching names:", error);
@@ -112,7 +110,10 @@ export default {
     async addName() {
       if (this.newName && !this.names.includes(this.newName)) {
         try {
-          await addDoc(collection(db, "names"), { name: this.newName });
+          await addDoc(collection(db, "names"), {
+            name: this.newName,
+            createdAt: serverTimestamp(),
+          });
           this.names.push(this.newName);
           this.calendarOptions.events = this.generateEvents();
           this.newName = "";
@@ -123,8 +124,9 @@ export default {
     },
     async removeName(index) {
       try {
-        const querySnapshot = await getDocs(collection(db, "names"));
-        const docId = querySnapshot.docs.find((doc) => doc.data().name === this.names[index]).id;
+        const q = query(collection(db, "names"), orderBy("createdAt", "asc"));
+        const querySnapshot = await getDocs(q);
+        const docId = querySnapshot.docs[index].id;
         await deleteDoc(doc(db, "names", docId));
         this.names.splice(index, 1);
         this.calendarOptions.events = this.generateEvents();
