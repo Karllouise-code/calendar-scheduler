@@ -25,7 +25,7 @@
               <draggable v-model="names" tag="ul" class="list-group" item-key="element" @end="updateNamesOrder">
                 <template #item="{ element }">
                   <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span class="drag-handle" style="cursor: move">{{ element }}</span>
+                    <span class="drag-handle" style="cursor: move"> {{ element }}</span>
                     <button class="btn btn-danger btn-sm" @click="removeName(names.indexOf(element))">Remove</button>
                   </li>
                 </template>
@@ -83,7 +83,7 @@ export default {
       calendarOptions: {
         plugins: [dayGridPlugin, rrulePlugin],
         initialView: "dayGridMonth",
-        initialDate: "2025-05-30",
+        initialDate: "2025-06-02",
         headerToolbar: {
           left: "prev,next today",
           center: "title",
@@ -146,7 +146,7 @@ export default {
         this.names.forEach((name, index) => {
           const docRef = doc(db, "names", docs.find((d) => d.data().name === name).id);
           batch.update(docRef, {
-            createdAt: new Date(Date.now() + index * 1000), // Sequential timestamps with offset
+            createdAt: new Date(Date.now() + index * 1000),
           });
         });
         await batch.commit();
@@ -155,54 +155,60 @@ export default {
         console.error("Error updating names order:", error);
       }
     },
+
     generateEvents() {
       const events = [];
-      const startDate = new Date("2025-05-30");
-      const daysInWeek = [4, 0, 1, 2, 3];
-      const totalSlots = 20;
-      const colors = ["#007bff", "#28a745", "#dc3545", "#ffc107", "#17a2b8", "#6610f2", "#fd7e14", "#6f42c1"];
+      const startDate = new Date("2025-06-02"); // Start date (Monday)
+      const endDate = new Date("2025-12-31"); // <-- Extend to December or any future date
 
-      for (let i = 0; i < totalSlots; i++) {
-        const nameIndex = i % this.names.length;
-        const name = this.names[nameIndex] || "Unassigned";
-        const dayIndex = i % 5;
-        const weekOffset = Math.floor(i / 5);
-        const eventDate = new Date(startDate);
-        let daysToAdd = daysInWeek[dayIndex] - startDate.getDay() + weekOffset * 7;
-        if (daysInWeek[dayIndex] <= startDate.getDay() && dayIndex !== 0) {
-          daysToAdd += 7;
+      const colors = ["#007bff", "#28a745", "#dc3545", "#ffc107", "#17a2b8", "#6610f2", "#fd7e14"];
+
+      let currentDate = new Date(startDate);
+      let slotIndex = 0;
+
+      while (currentDate <= endDate) {
+        // Skip weekends (0 = Sunday, 6 = Saturday)
+        if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
+          const nameIndex = slotIndex % this.names.length;
+          const name = this.names[nameIndex] || "Unassigned";
+          const event = {
+            title: name,
+            backgroundColor: colors[nameIndex % colors.length],
+            borderColor: colors[nameIndex % colors.length],
+            start: currentDate.toISOString().split("T")[0], // direct start date instead of rrule
+            allDay: true,
+          };
+          events.push(event);
+          slotIndex++;
         }
-        eventDate.setDate(eventDate.getDate() + daysToAdd);
-
-        events.push({
-          title: name,
-          backgroundColor: colors[nameIndex % colors.length],
-          borderColor: colors[nameIndex % colors.length],
-          rrule: {
-            freq: "weekly",
-            interval: 4,
-            byweekday: [daysInWeek[dayIndex]],
-            dtstart: eventDate.toISOString().split("T")[0],
-          },
-        });
+        currentDate.setDate(currentDate.getDate() + 1);
       }
 
       return events;
     },
+
     exportSchedule() {
       const events = this.generateEvents();
-      const csv = events.map((event) => ({
-        title: event.title,
-        day: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"][event.rrule.byweekday[0]],
-        startDate: event.rrule.dtstart,
-      }));
+      const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+      const csv = events.map((event) => {
+        const date = new Date(event.start);
+        return {
+          title: event.title,
+          day: weekdays[date.getDay()],
+          startDate: event.start,
+        };
+      });
+
       const csvContent = "Title,Day,StartDate\n" + csv.map((e) => `${e.title},${e.day},${e.startDate}`).join("\n");
+
       const blob = new Blob([csvContent], { type: "text/csv" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = "schedule.csv";
       link.click();
     },
+
     openManageNamesModal() {
       const modalElement = document.getElementById("manageNamesModal");
       const modal = new bootstrap.Modal(modalElement);
