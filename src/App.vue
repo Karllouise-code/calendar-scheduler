@@ -1,7 +1,10 @@
 <template>
   <div class="container mt-4">
-    <div class="mb-3 d-flex justify-content-between align-items-center">
+    <div class="mb-3 d-md-flex justify-content-md-between align-items-center">
       <h2 class="mb-3">Weekly Schedule</h2>
+      <div>
+        <img :src="sinaing_logo" alt="" width="50"  />
+      </div>
       <div>
         <button class="btn btn-primary me-2" @click="openManageNamesModal">Manage Names</button>
         <button class="btn btn-success" @click="exportSchedule"><i class="bi bi-download"></i></button>
@@ -60,6 +63,7 @@ import * as bootstrap from "bootstrap";
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, orderBy, query, serverTimestamp, writeBatch, updateDoc } from "firebase/firestore";
 import draggable from "vuedraggable";
+import sinaing_logo from "./assets/rice-cooker_1530504.png";
 
 // Firebase configuration using environment variables
 const firebaseConfig = {
@@ -107,6 +111,7 @@ export default {
         eventTextColor: "#fff",
         eventBackgroundColor: "#007bff",
       },
+      sinaing_logo,
     };
   },
 
