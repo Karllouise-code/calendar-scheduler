@@ -3,7 +3,7 @@
     <div class="mb-3 d-md-flex justify-content-md-between align-items-center">
       <h2 class="mb-3">Weekly Schedule</h2>
       <div>
-        <img :src="sinaing_logo" alt="" width="50"  />
+        <img :src="sinaing_logo" alt="" width="50" />
       </div>
       <div>
         <button class="btn btn-primary me-2" @click="openManageNamesModal">Manage Names</button>
@@ -267,7 +267,7 @@ export default {
 
 <style>
 * {
-  font-family: 'Mali', sans-serif;
+  font-family: "Mali", sans-serif;
 }
 
 .container {
@@ -290,7 +290,12 @@ export default {
   margin-right: 8px;
 }
 
-.fc-theme-standard td, .fc-theme-standard th {
+.fc-theme-standard td,
+.fc-theme-standard th {
   border: 1px solid #9b8c8c !important;
+}
+
+.fc-view-harness {
+  height: 700px !important;
 }
 </style>
