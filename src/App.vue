@@ -264,6 +264,10 @@ export default {
 </script>
 
 <style scoped>
+* {
+  font-family: 'Mali', sans-serif;
+}
+
 .container {
   max-width: 1200px;
 }
