@@ -2,7 +2,7 @@
   <div class="container mt-4">
     <div class="mb-3 d-md-flex justify-content-md-between align-items-center">
       <h2 class="mb-3">Weekly Schedule</h2>
-      <div>
+      <div @click="onRedirectGitHub" style="cursor: pointer;">
         <img :src="sinaing_logo" alt="" width="50" />
       </div>
       <div>
@@ -261,6 +261,10 @@ export default {
       const modal = new bootstrap.Modal(modalElement);
       modal.show();
     },
+
+    onRedirectGitHub() {
+      window.open("https://github.com/Karllouise-code/calender-scheduler", "_blank");
+    }
   },
 };
 </script>
