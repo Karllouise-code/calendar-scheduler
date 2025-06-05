@@ -20,7 +20,7 @@
           <div class="modal-body">
             <div class="input-group mb-3">
               <input v-model="newName" placeholder="Add new name" class="form-control" />
-              <button class="btn btn-primary" @click="addName">Add Name</button>
+              <button class="btn btn-primary" @click="addName">Add <i class="bi bi-plus-lg"></i></button>
             </div>
             <div>
               <h5>Current Names (Drag to reorder):</h5>
@@ -45,9 +45,6 @@
                 </template>
               </draggable>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
       </div>
