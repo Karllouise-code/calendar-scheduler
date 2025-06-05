@@ -260,7 +260,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 * {
   font-family: 'Mali', sans-serif;
 }
@@ -283,5 +283,9 @@ export default {
 .drag-handle::before {
   content: "☰";
   margin-right: 8px;
+}
+
+.fc-theme-standard td, .fc-theme-standard th {
+  border: 1px solid #9b8c8c !important;
 }
 </style>
