@@ -1,9 +1,11 @@
 <template>
   <div class="container mt-4">
-    <h2 class="mb-3">Weekly Schedule</h2>
     <div class="mb-3 d-flex justify-content-between align-items-center">
-      <button class="btn btn-primary" @click="openManageNamesModal">Manage Names</button>
-      <button class="btn btn-primary" @click="exportSchedule">Export Schedule</button>
+      <h2 class="mb-3">Weekly Schedule</h2>
+      <div>
+        <button class="btn btn-primary me-2" @click="openManageNamesModal">Manage Names</button>
+        <button class="btn btn-success" @click="exportSchedule"><i class="bi bi-download"></i></button>
+      </div>
     </div>
     <FullCalendar :options="calendarOptions" />
 
@@ -23,10 +25,22 @@
             <div>
               <h5>Current Names (Drag to reorder):</h5>
               <draggable v-model="names" tag="ul" class="list-group" item-key="element" @end="updateNamesOrder">
-                <template #item="{ element }">
+                <template #item="{ element, index }">
                   <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span class="drag-handle" style="cursor: move"> {{ element }}</span>
-                    <button class="btn btn-danger btn-sm" @click="removeName(names.indexOf(element))">Remove</button>
+                    <template v-if="editingIndex === index">
+                      <div class="input-group">
+                        <input v-model="editedName" class="form-control" placeholder="Edit name" />
+                        <button class="btn btn-success btn-sm" @click="saveEditedName(index)"><i class="bi bi-check-lg"></i></button>
+                        <button class="btn btn-secondary btn-sm" @click="cancelEdit"><i class="bi bi-x-lg"></i></button>
+                      </div>
+                    </template>
+                    <template v-else>
+                      <span class="drag-handle" style="cursor: move">{{ element }}</span>
+                      <div>
+                        <button class="btn btn-warning btn-sm me-2" @click="startEdit(index, element)"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-danger btn-sm" @click="removeName(index)"><i class="bi bi-trash3"></i></button>
+                      </div>
+                    </template>
                   </li>
                 </template>
               </draggable>
@@ -47,7 +61,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import rrulePlugin from "@fullcalendar/rrule";
 import * as bootstrap from "bootstrap";
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, orderBy, query, serverTimestamp, writeBatch } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, orderBy, query, serverTimestamp, writeBatch, updateDoc } from "firebase/firestore";
 import draggable from "vuedraggable";
 
 // Firebase configuration using environment variables
@@ -80,6 +94,8 @@ export default {
       // ],
       names: [],
       newName: "",
+      editingIndex: null,
+      editedName: "",
       calendarOptions: {
         plugins: [dayGridPlugin, rrulePlugin],
         initialView: "dayGridMonth",
@@ -96,10 +112,12 @@ export default {
       },
     };
   },
+
   async created() {
     await this.fetchNames();
     this.calendarOptions.events = this.generateEvents();
   },
+
   methods: {
     async fetchNames() {
       try {
@@ -110,6 +128,7 @@ export default {
         console.error("Error fetching names:", error);
       }
     },
+
     async addName() {
       if (this.newName && !this.names.includes(this.newName)) {
         try {
@@ -125,6 +144,7 @@ export default {
         }
       }
     },
+
     async removeName(index) {
       try {
         const q = query(collection(db, "names"), orderBy("createdAt", "asc"));
@@ -156,13 +176,41 @@ export default {
       }
     },
 
+    startEdit(index, name) {
+      this.editingIndex = index;
+      this.editedName = name;
+    },
+    async saveEditedName(index) {
+      if (!this.editedName || this.editedName.length > 50 || this.names.includes(this.editedName)) {
+        alert("Name must be unique, non-empty, and 50 characters or less.");
+        return;
+      }
+      try {
+        const q = query(collection(db, "names"), orderBy("createdAt", "asc"));
+        const querySnapshot = await getDocs(q);
+        const docId = querySnapshot.docs[index].id;
+        await updateDoc(doc(db, "names", docId), {
+          name: this.editedName,
+        });
+        this.names[index] = this.editedName;
+        this.calendarOptions.events = this.generateEvents();
+        this.cancelEdit();
+      } catch (error) {
+        console.error("Error editing name:", error);
+      }
+    },
+
+    cancelEdit() {
+      this.editingIndex = null;
+      this.editedName = "";
+    },
+
     generateEvents() {
       const events = [];
       const startDate = new Date("2025-06-02"); // Start date (Monday)
       const endDate = new Date("2025-12-31"); // <-- Extend to December or any future date
 
       const colors = ["#007bff", "#28a745", "#dc3545", "#ffc107", "#17a2b8", "#6610f2", "#fd7e14"];
-
       let currentDate = new Date(startDate);
       let slotIndex = 0;
 
@@ -190,7 +238,6 @@ export default {
     exportSchedule() {
       const events = this.generateEvents();
       const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
       const csv = events.map((event) => {
         const date = new Date(event.start);
         return {
@@ -199,9 +246,7 @@ export default {
           startDate: event.start,
         };
       });
-
       const csvContent = "Title,Day,StartDate\n" + csv.map((e) => `${e.title},${e.day},${e.startDate}`).join("\n");
-
       const blob = new Blob([csvContent], { type: "text/csv" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
