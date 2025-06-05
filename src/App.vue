@@ -104,7 +104,7 @@ export default {
         headerToolbar: {
           left: "prev,next today",
           center: "title",
-          right: "dayGridMonth,dayGridWeek",
+          right: "dayGridMonth,dayGridWeek,dayGridDay",
         },
         events: [],
         eventDisplay: "block",
