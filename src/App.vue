@@ -2,7 +2,7 @@
   <div class="container mt-4">
     <div class="mb-3 d-md-flex justify-content-md-between align-items-center">
       <h2 class="mb-3">Weekly Schedule</h2>
-      <div @click="onRedirectGitHub" style="cursor: pointer;">
+      <div @click="onRedirectGitHub" style="cursor: pointer">
         <img :src="sinaing_logo" alt="" width="50" />
       </div>
       <div>
@@ -52,6 +52,28 @@
         </div>
       </div>
     </div>
+
+    <!-- Password Prompt Modal -->
+    <div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="passwordModalLabel">Enter Password</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="resetPasswordInput"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <input v-model="passwordInput" type="password" class="form-control" placeholder="Enter password to edit" />
+              <div v-if="passwordError" class="text-danger mt-2">{{ passwordError }}</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="resetPasswordInput">Cancel</button>
+            <button type="button" class="btn btn-primary" @click="verifyPassword">Submit</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -97,6 +119,10 @@ export default {
       newName: "",
       editingIndex: null,
       editedName: "",
+      passwordInput: "",
+      passwordError: "",
+      isPasswordVerified: false,
+      pendingOperation: null, // Store pending operation (edit or delete)
       calendarOptions: {
         plugins: [dayGridPlugin, rrulePlugin],
         initialView: "dayGridMonth",
@@ -143,22 +169,38 @@ export default {
           this.newName = "";
         } catch (error) {
           console.error("Error adding name:", error);
+          alert("Failed to add name. Please try again.");
         }
       }
     },
 
     async removeName(index) {
       try {
+        if (!confirm("Are you sure you want to remove this name?")) {
+          return;
+        }
+
         const q = query(collection(db, "names"), orderBy("createdAt", "asc"));
         const querySnapshot = await getDocs(q);
         const docId = querySnapshot.docs[index].id;
+
+        // Check if the document is the protected one
+        if (docId === "MyQaKlgRTqvQjvynHHWm" && !this.isPasswordVerified) {
+        // if (docId === "7ansDf6SotnkOBvLL5qU" && !this.isPasswordVerified) {
+          this.pendingOperation = { type: "remove", index };
+          this.promptPassword();
+          return;
+        }
+
         await deleteDoc(doc(db, "names", docId));
         this.names.splice(index, 1);
         this.calendarOptions.events = this.generateEvents();
       } catch (error) {
         console.error("Error removing name:", error);
+        alert("Failed to remove name. Please try again.");
       }
     },
+
     async updateNamesOrder() {
       try {
         const q = query(collection(db, "names"), orderBy("createdAt", "asc"));
@@ -175,6 +217,7 @@ export default {
         this.calendarOptions.events = this.generateEvents();
       } catch (error) {
         console.error("Error updating names order:", error);
+        alert("Failed to update names order. Please try again.");
       }
     },
 
@@ -182,15 +225,26 @@ export default {
       this.editingIndex = index;
       this.editedName = name;
     },
+
     async saveEditedName(index) {
       if (!this.editedName || this.editedName.length > 50 || this.names.includes(this.editedName)) {
         alert("Name must be unique, non-empty, and 50 characters or less.");
         return;
       }
+
       try {
         const q = query(collection(db, "names"), orderBy("createdAt", "asc"));
         const querySnapshot = await getDocs(q);
         const docId = querySnapshot.docs[index].id;
+
+        // Check if the document is the protected one
+        if (docId === "MyQaKlgRTqvQjvynHHWm" && !this.isPasswordVerified) {
+        // if (docId === "7ansDf6SotnkOBvLL5qU" && !this.isPasswordVerified) {
+          this.pendingOperation = { type: "edit", index };
+          this.promptPassword();
+          return;
+        }
+
         await updateDoc(doc(db, "names", docId), {
           name: this.editedName,
         });
@@ -199,6 +253,7 @@ export default {
         this.cancelEdit();
       } catch (error) {
         console.error("Error editing name:", error);
+        alert("Failed to edit name. Please try again.");
       }
     },
 
@@ -207,10 +262,46 @@ export default {
       this.editedName = "";
     },
 
+    promptPassword() {
+      const modalElement = document.getElementById("passwordModal");
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
+    },
+
+    async verifyPassword() {
+      // Hardcoded password for demo (replace with secure verification)
+      const correctPassword = "poginiKarl";
+      if (this.passwordInput === correctPassword) {
+        this.isPasswordVerified = true;
+        this.passwordInput = "";
+        this.passwordError = "";
+        const passwordModal = bootstrap.Modal.getInstance(document.getElementById("passwordModal"));
+        passwordModal.hide();
+
+        // Execute pending operation if any
+        if (this.pendingOperation) {
+          if (this.pendingOperation.type === "edit") {
+            await this.saveEditedName(this.pendingOperation.index);
+          } else if (this.pendingOperation.type === "remove") {
+            await this.removeName(this.pendingOperation.index);
+          }
+          this.pendingOperation = null;
+        }
+      } else {
+        this.passwordError = "HAHA! BAGING!";
+      }
+    },
+
+    resetPasswordInput() {
+      this.passwordInput = "";
+      this.passwordError = "";
+      this.pendingOperation = null;
+    },
+
     generateEvents() {
       const events = [];
       const startDate = new Date("2025-06-02"); // Start date (Monday)
-      const endDate = new Date("2025-12-31"); // <-- Extend to December or any future date
+      const endDate = new Date("2025-12-31"); // Extend to December or any future date
 
       const colors = ["#007bff", "#28a745", "#dc3545", "#ffc107", "#17a2b8", "#6610f2", "#fd7e14"];
       let currentDate = new Date(startDate);
@@ -264,7 +355,7 @@ export default {
 
     onRedirectGitHub() {
       window.open("https://github.com/Karllouise-code/calender-scheduler", "_blank");
-    }
+    },
   },
 };
 </script>
