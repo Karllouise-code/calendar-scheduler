@@ -6,7 +6,7 @@
         <img :src="sinaing_logo" alt="" width="50" />
       </div>
       <div>
-        <button class="btn btn-primary me-2" @click="openManageNamesModal">Manage Names</button>
+        <button class="btn btn-primary me-2" @click="openManageNamesModal"><i class="bi bi-gear"></i></button>
         <button class="btn btn-success" @click="exportSchedule"><i class="bi bi-download"></i></button>
       </div>
     </div>
@@ -17,10 +17,22 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="manageNamesModalLabel">Manage Names</h5>
+            <h5 class="modal-title" id="manageNamesModalLabel">Settings</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
+            <!-- Date Inputs for Start and End Date -->
+            <div class="row">
+              <div class="mb-3 col-md-6">
+                <label for="startDate" class="form-label">Start Date</label>
+                <input v-model="startDateInput" type="date" class="form-control form-control-sm" id="startDate" @change="updateDates" />
+              </div>
+              <div class="mb-3 col-md-6">
+                <label for="endDate" class="form-label">End Date</label>
+                <input v-model="endDateInput" type="date" class="form-control form-control-sm" id="endDate" @change="updateDates" />
+              </div>
+            </div>
+
             <div class="input-group mb-3">
               <input v-model="newName" placeholder="Add new name" class="form-control" />
               <button class="btn btn-primary" @click="addName">Add <i class="bi bi-plus-lg"></i></button>
@@ -83,7 +95,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import rrulePlugin from "@fullcalendar/rrule";
 import * as bootstrap from "bootstrap";
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, orderBy, query, serverTimestamp, writeBatch, updateDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, orderBy, query, serverTimestamp, writeBatch, updateDoc, getDoc, setDoc } from "firebase/firestore";
 import draggable from "vuedraggable";
 import sinaing_logo from "./assets/rice-cooker_1530504.png";
 
@@ -106,13 +118,13 @@ export default {
   data() {
     return {
       //  names: [
-        //   "Rio", // Monday, June 2, 2025
-        //   "Shernan",
-        //   "Fae Arabella",
-        //   "Dominic Ivan",
-        //   "Crissan",
-        //   "Karl Louise",
-        //   "Lester Niel",
+      //   "Rio", // Monday, June 2, 2025
+      //   "Shernan",
+      //   "Fae Arabella",
+      //   "Dominic Ivan",
+      //   "Crissan",
+      //   "Karl Louise",
+      //   "Lester Niel",
       // ],
       names: [],
       newName: "",
@@ -137,6 +149,8 @@ export default {
         eventBackgroundColor: "#007bff",
       },
       sinaing_logo,
+      startDateInput: "2025-06-18", // Default start date
+      endDateInput: "2025-12-31", // Default end date
     };
   },
 
@@ -153,6 +167,46 @@ export default {
         this.names = querySnapshot.docs.map((doc) => doc.data().name);
       } catch (error) {
         console.error("Error fetching names:", error);
+      }
+    },
+
+    async fetchDates() {
+      try {
+        const docRef = doc(db, "settings", "schedule");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          this.startDateInput = data.startDate || "2025-06-18";
+          this.endDateInput = data.endDate || "2025-12-31";
+        } else {
+          // Initialize default dates in Firebase if not set
+          await setDoc(docRef, {
+            startDate: this.startDateInput,
+            endDate: this.endDateInput,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching dates:", error);
+        alert("Failed to fetch schedule dates. Using defaults.");
+      }
+    },
+
+    async updateDates() {
+      try {
+        const startDate = new Date(this.startDateInput);
+        const endDate = new Date(this.endDateInput);
+        if (isNaN(startDate) || isNaN(endDate) || startDate > endDate) {
+          alert("Invalid dates. Start date must be before end date.");
+          return;
+        }
+        await setDoc(doc(db, "settings", "schedule"), {
+          startDate: this.startDateInput,
+          endDate: this.endDateInput,
+        });
+        this.calendarOptions.events = this.generateEvents();
+      } catch (error) {
+        console.error("Error updating dates:", error);
+        alert("Failed to update schedule dates. Please try again.");
       }
     },
 
@@ -173,7 +227,7 @@ export default {
       }
     },
 
-   async removeName(index) {
+    async removeName(index) {
       try {
         if (!confirm("Are you sure you want to remove this name?")) {
           return;
@@ -307,15 +361,18 @@ export default {
 
     generateEvents() {
       const events = [];
-      const startDate = new Date("2025-06-02"); // Start date (Monday)
-      const endDate = new Date("2025-12-31"); // Extend to December or any future date
-
+      const startDate = new Date(this.startDateInput);
+      const endDate = new Date(this.endDateInput);
       const colors = ["#007bff", "#28a745", "#dc3545", "#ffc107", "#17a2b8", "#6610f2", "#fd7e14"];
       let currentDate = new Date(startDate);
       let slotIndex = 0;
 
+      if (!this.names.length || isNaN(startDate) || isNaN(endDate) || startDate > endDate) {
+        console.error("Invalid names or dates");
+        return events;
+      }
+
       while (currentDate <= endDate) {
-        // Skip weekends (0 = Sunday, 6 = Saturday)
         if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
           const nameIndex = slotIndex % this.names.length;
           const name = this.names[nameIndex] || "Unassigned";
@@ -323,7 +380,7 @@ export default {
             title: name,
             backgroundColor: colors[nameIndex % colors.length],
             borderColor: colors[nameIndex % colors.length],
-            start: currentDate.toISOString().split("T")[0], // direct start date instead of rrule
+            start: currentDate.toISOString().split("T")[0],
             allDay: true,
           };
           events.push(event);
