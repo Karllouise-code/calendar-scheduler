@@ -182,11 +182,15 @@ export default {
 
         const q = query(collection(db, "names"), orderBy("createdAt", "asc"));
         const querySnapshot = await getDocs(q);
+        if (!querySnapshot.docs[index]) {
+          console.error("No document found at index:", index);
+          alert("Name not found. Please refresh and try again.");
+          return;
+        }
+
         const docId = querySnapshot.docs[index].id;
 
-        // Check if the document is the protected one
         if (docId === "MyQaKlgRTqvQjvynHHWm" && !this.isPasswordVerified) {
-        // if (docId === "7ansDf6SotnkOBvLL5qU" && !this.isPasswordVerified) {
           this.pendingOperation = { type: "remove", index };
           this.promptPassword();
           return;
@@ -196,8 +200,8 @@ export default {
         this.names.splice(index, 1);
         this.calendarOptions.events = this.generateEvents();
       } catch (error) {
-        console.error("Error removing name:", error);
-        alert("Failed to remove name. Please try again.");
+        console.error("Error removing name:", error.code, error.message);
+        alert(`Failed to remove name: ${error.message}`);
       }
     },
 
@@ -239,7 +243,7 @@ export default {
 
         // Check if the document is the protected one
         if (docId === "MyQaKlgRTqvQjvynHHWm" && !this.isPasswordVerified) {
-        // if (docId === "7ansDf6SotnkOBvLL5qU" && !this.isPasswordVerified) {
+          // if (docId === "7ansDf6SotnkOBvLL5qU" && !this.isPasswordVerified) {
           this.pendingOperation = { type: "edit", index };
           this.promptPassword();
           return;
