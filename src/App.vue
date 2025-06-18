@@ -106,14 +106,13 @@ export default {
   data() {
     return {
       //  names: [
-      //   "Lester Niel", // Friday, May 30, 2025
-      //   "Rio", // Monday, June 2, 2025
-      //   "Shernan",
-      //   "Fae Arabella",
-      //   "Dominic Ivan",
-      //   "Crissan",
-      //   "Christian",
-      //   "Karl Louise",
+        //   "Rio", // Monday, June 2, 2025
+        //   "Shernan",
+        //   "Fae Arabella",
+        //   "Dominic Ivan",
+        //   "Crissan",
+        //   "Karl Louise",
+        //   "Lester Niel",
       // ],
       names: [],
       newName: "",
