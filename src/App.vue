@@ -174,7 +174,7 @@ export default {
       }
     },
 
-    async removeName(index) {
+   async removeName(index) {
       try {
         if (!confirm("Are you sure you want to remove this name?")) {
           return;
@@ -197,11 +197,15 @@ export default {
         }
 
         await deleteDoc(doc(db, "names", docId));
-        this.names.splice(index, 1);
+        await this.fetchNames(); // Refresh names to ensure sync
         this.calendarOptions.events = this.generateEvents();
       } catch (error) {
         console.error("Error removing name:", error.code, error.message);
-        alert(`Failed to remove name: ${error.message}`);
+        let errorMessage = "Failed to remove name. Please try again.";
+        if (error.code === "permission-denied") {
+          errorMessage = "You don't have permission to remove this name.";
+        }
+        alert(errorMessage);
       }
     },
 
