@@ -2,7 +2,7 @@
 
 A Vue.js web application for scheduling names on a weekly calendar, designed for managing tasks or assignments on workdays (Monday–Friday). Built with Firebase Firestore for real-time data persistence, it allows users to add, edit, remove, and reorder names via a user-friendly interface, export schedules as CSV, and view events in a customizable calendar.
 
-🚀 **[Live Demo](https://your-site-name.netlify.app)** | 🐙 **Click the rice cooker logo to visit GitHub!**
+🚀 **[Live Demo](https://karlendaryo.netlify.app/)** | 🐙 **Click the rice cooker logo to visit GitHub!**
 
 ## ✨ Features
 
