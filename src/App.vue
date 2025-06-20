@@ -418,7 +418,7 @@ export default {
     },
 
     onRedirectGitHub() {
-      window.open("https://github.com/Karllouise-code/calender-scheduler", "_blank");
+      window.open("https://github.com/Karllouise-code/calendar-scheduler", "_blank");
     },
   },
 };
