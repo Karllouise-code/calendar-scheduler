@@ -195,24 +195,6 @@ npm run lint
 
 4. **Verify**: Visit your Netlify URL to see the live application
 
-## 🔒 Security
-
-### Important Security Notes
-
-⚠️ **API Key Exposure**: The Firebase apiKey was previously exposed in commit `9e1c7d`. 
-
-**To clean up**:
-```bash
-pip3 install git-filter-repo
-git filter-repo --path .env --debug
-git push origin --force --all
-```
-
-**Then**:
-1. Rotate the apiKey in Firebase Console for both projects
-2. Update `.env.development`, `.env.production`, and Netlify environment variables
-3. Update Firestore rules before June 29, 2025, to avoid lockout
-
 ## 🎯 Usage
 
 ### Managing Your Schedule
