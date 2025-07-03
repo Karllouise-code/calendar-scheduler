@@ -118,13 +118,14 @@ export default {
   data() {
     return {
       //  names: [
-      //   "Rio", // Monday, June 2, 2025
       //   "Shernan",
-      //   "Fae Arabella",
-      //   "Dominic Ivan",
       //   "Crissan",
+      // after crissan IVAN DAPAT
       //   "Karl Louise",
       //   "Lester Niel",
+      //   "Rio", // Monday, June 2, 2025
+
+      //   "Dominic Ivan",
       // ],
       names: [],
       newName: "",
@@ -137,7 +138,7 @@ export default {
       calendarOptions: {
         plugins: [dayGridPlugin, rrulePlugin],
         initialView: "dayGridMonth",
-        initialDate: "2025-06-02",
+        initialDate: new Date().toISOString().split("T")[0],
         headerToolbar: {
           left: "prev,next today",
           center: "title",
@@ -155,6 +156,7 @@ export default {
   },
 
   async created() {
+    await this.fetchDates(); 
     await this.fetchNames();
     this.calendarOptions.events = this.generateEvents();
   },
@@ -178,6 +180,7 @@ export default {
           const data = docSnap.data();
           this.startDateInput = data.startDate || "2025-06-18";
           this.endDateInput = data.endDate || "2025-12-31";
+          this.calendarOptions.initialDate = this.startDateInput; // ⬅️ Update calendar
         } else {
           // Initialize default dates in Firebase if not set
           await setDoc(docRef, {
