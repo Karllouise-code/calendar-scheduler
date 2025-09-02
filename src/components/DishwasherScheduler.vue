@@ -2,7 +2,7 @@
   <div v-if="!isAuthenticated">
     <PasswordPrompt 
       :correctPassword="'dishwasherspecial'" 
-      :storageKey="'dishwasher_scheduler_authenticated'" 
+      :storageKey="'qoiwufklfs_authenticated'" 
       @authenticated="onAuthenticated" 
     />
   </div>
@@ -116,12 +116,12 @@ const onAuthenticated = () => {
 };
 
 const logout = () => {
-  localStorage.removeItem('dishwasher_scheduler_authenticated');
+  localStorage.removeItem('qoiwufklfs_authenticated');
   isAuthenticated.value = false;
 };
 
 onMounted(() => {
-  isAuthenticated.value = localStorage.getItem('dishwasher_scheduler_authenticated') === 'true';
+  isAuthenticated.value = localStorage.getItem('qoiwufklfs_authenticated') === 'true';
   if (isAuthenticated.value) {
     fetchDates();
     fetchNames().then(() => {
