@@ -7,7 +7,7 @@
         <button class="btn btn-success" @click="exportSchedule"><i class="bi bi-download"></i></button>
       </div>
     </div>
-    <FullCalendar :options="calendarOptions" />
+    <FullCalendar ref="dishwasherCalendar" :options="calendarOptions" />
 
     <!-- Modal for Managing Names -->
     <div class="modal fade" id="manageNamesModal-dishwasher" tabindex="-1" aria-labelledby="manageNamesModalLabel-dishwasher" aria-hidden="true">
@@ -134,6 +134,11 @@ export default {
   },
 
   methods: {
+    handleResize() {
+      if (this.$refs.dishwasherCalendar) {
+        this.$refs.dishwasherCalendar.getApi().updateSize();
+      }
+    },
     async fetchNames() {
       try {
         const q = query(collection(db, "dishwasher_names"), orderBy("createdAt", "asc"));

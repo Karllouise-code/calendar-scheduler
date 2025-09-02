@@ -20,7 +20,7 @@
         <WeeklyScheduler />
       </div>
       <div id="dishwasher" class="tab-pane fade">
-        <DishwasherScheduler />
+        <DishwasherScheduler ref="dishwasherScheduler" />
       </div>
     </div>
   </div>
@@ -44,6 +44,12 @@ export default {
       sinaing_logo,
       diashwasher_logo,
     };
+  },
+  mounted() {
+    const dishwasherTab = document.querySelector('a[href="#dishwasher"]');
+    dishwasherTab.addEventListener('shown.bs.tab', () => {
+      this.$refs.dishwasherScheduler.handleResize();
+    });
   },
 };
 </script>
